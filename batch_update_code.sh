@@ -2,13 +2,23 @@
 eval $(ssh-agent -s)
 ssh-add ~/.ssh/id_rsa
 
-item1="/var/www/project/item1"
-item2="/var/www/project/item2"
-item3="/var/www/project/item3"
+# the item absolute path,actual path will be prefix join item file name
+prefix="/www/project"
+item1="item1"
+item2="item2"
+item3="item3"
 
-# user and group
-user="www"
-group="www"
+# the file user and group
+user="_www"
+group="_www"
+
+# branch name
+branchArr=(
+    dev
+    prepub
+    master
+)
+
 
 itemArr=(
     $item1
@@ -18,12 +28,13 @@ itemArr=(
 
 gitExec(){
     sudo git fetch -p
-    sudo git checkout master
-    sudo git pull
-    sudo git checkout test
-    sudo git pull
-    sudo git checkout develop
-    sudo git pull
+    for i in ${branchArr[@]}
+        do
+            echo -e "\033[32m Switched to branch\033[0m \033[31m $i \033[0m \033[32m start pull...\033[0m"
+            sudo git checkout $i
+            sudo git pull
+        done
+    
 }
 
 updatePermission(){
@@ -39,10 +50,11 @@ codePull(){
     cd $1
     gitExec
     echo -e "\033[32m item \033[0m  \033[31m $1 \033[0m \033[32m end... \033[0m"
+
     echo -e "\033[32m start update file permission... \033[0m"
     echo "|-------------------------------|"
     updatePermission $1
-} 
+}   
 
 if [ ${#itemArr[@]} == 0 ];
 then
@@ -50,11 +62,12 @@ then
 else
     for i in ${itemArr[@]}
         do
-           if [ ! -d "$i" ];
-           then
-               echo $i ": No such file or directory"
-           else
-               codePull $i
-           fi
-         done
+            if [ ! -d "$prefix$i" ];
+            then
+                echo $prefix$i ": No such file or directory"
+            else
+                codePull $prefix$i
+            fi
+        done
 fi
+
