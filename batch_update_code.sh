@@ -13,7 +13,7 @@ END=" \033[0m"
 
 CUR_FOLDER=$(dirname $(readlink -f "$0"))
 # the file user and group
-user="ashertai"
+user="www"
 group="staff"
 
 # branch name
@@ -63,6 +63,28 @@ function readDir(){
             codePull $CUR_FOLDER"/"$dir 
         fi
     done
+}
+
+urlLocal="http://127.0.0.1/"
+urlProjLocal="http://127.0.0.1/proj/"
+urlRemote=""
+function setUrl(){
+    cd $CUR_FOLDER"/"$1
+    # git remote set-url origin 
+    if [ $1 == "deploy" ];then
+        urlRemote="${urlProjLocal}$1.git"
+    else
+        urlRemote="${urlLocal}$1.git"
+    fi
+    git remote set-url origin ${urlRemote}
+    cd $CUR_FOLDER
+}
+
+function setConfig() {
+    cd $1
+    git config user.name username
+    git config user.email useremail
+    cd $CUR_FOLDER
 }
 
 # if [ ${#itemArr[@]} == 0 ];
