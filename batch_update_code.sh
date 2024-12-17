@@ -12,6 +12,8 @@ WHITE="\033[37m "
 END=" \033[0m"
 
 CUR_FOLDER=$(dirname $(readlink -f "$0"))
+# max process
+MAX_JOBS=5
 # the file user and group
 user="www"
 group="staff"
@@ -23,7 +25,7 @@ branchArr=(
     develop
 )
 
-gitExec(){
+function gitPull(){
     sudo git fetch -p
     for i in ${branchArr[@]}
         do
@@ -34,18 +36,18 @@ gitExec(){
     
 }
 
-updatePermission(){
+function updatePermission(){
     sudo chown -R $user":"$group $1
     sudo chmod -R o+w $1
 }
 
-codePull(){
+function codePull(){
     echo -e "${GREEN} start code pull... ${END}"
     echo "|------------------|"
     echo -e "${GREEN} item : ${END} ${RED} $1 ${END}"
     echo "|------------------|"
     cd $1
-    gitExec
+    gitPull
     echo -e "${GREEN} item ${END}  ${RED} $1 ${END} ${GREEN} end... ${END}"
 
     echo -e "${GREEN} start update file permission... ${END}"
@@ -54,14 +56,37 @@ codePull(){
     cd $CUR_FOLDER
 }   
 
-function readDir(){
+function codePullMultiProcess(){
+    local jobList=()
+    # the first parmam is env config
+    # if env param=remote,will be set remote url
     for dir in `ls .`
     do 
         if [ -d $dir ]
         then
             echo -e "${SKYEBLUE}${dir}${END}"
-            codePull $CUR_FOLDER"/"$dir 
+            # 并行执行
+            # $! 代表最后一个进程id
+            codePull $CUR_FOLDER"/"$dir $dir &
+            jobList+=($!)
+            # 控制最大并发数近一个后进程的id
+            if [ ${#jobList[@]} -ge $MAX_JOBS ];then 
+                waitingProcess
+                jobList=()
+            fi
+            # 修改配s置
+            # set_config $CUR_FOLDER"/"$dir
+            # 设置remote url
+            #  set_url $dir
         fi
+    done
+    # waiting other process
+    waitingProcess
+}
+
+function waitingProcess() {
+    for j in "${job_list[@]}";do 
+        wait "$j" || echo "process $j failed"
     done
 }
 
@@ -87,19 +112,4 @@ function setConfig() {
     cd $CUR_FOLDER
 }
 
-# if [ ${#itemArr[@]} == 0 ];
-# then
-#     echo -e "\033[31m there no items neet to ge updated \033[0m"
-# else
-#     for i in ${itemArr[@]}
-#         do
-#             if [ ! -d "$prefix$i" ];
-#             then
-#                 echo $prefix$i ": No such file or directory"
-#             else
-#                 codePull $prefix$i
-#             fi
-#         done
-# fi
-
-readDir
+codePullMultiProcess
